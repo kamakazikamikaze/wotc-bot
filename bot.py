@@ -54,7 +54,7 @@ def player_info(contents):
 def clan_info(contents):
     CLAN_VALID = {
         'summary': (
-            'Name: {0[Name]}\n\n'
+            '##Name: {0[Name]}\n\n'
             'This month\'s battles: {0[MonthBattles]}\n\n'
             'Total members: {0[Count]}\n\n'
             'Active members: {0[Active]}\n\n'
@@ -63,7 +63,7 @@ def clan_info(contents):
             'Total win rate: {0[TotalWinRate]:.3%}\n\n'
         ),
         'active': (
-            'Name: {0[Name]}\n\nActive member count: {0[Active]}\n\n'
+            '##Name: {0[Name]}\n\nActive member count: {0[Active]}\n\n'
             'Percent of players active: {0[ActivePercent]:.3%}\n\n'
             'This month\'s battles: {0[MonthBattles]}\n\n'
             'Win rate: {0[ActiveWinRate]:.3%}\n\n'
@@ -72,7 +72,7 @@ def clan_info(contents):
             '{1}\n\n'
         ),
         'battles': (
-            'Name: {0[Name]}\n\n'
+            '##Name: {0[Name]}\n\n'
             'Total battles: {0[TotalBattles]}\n\n'
             'Total win rate: {0[TotalWinRate]:.3%}\n\n'
             'This month\'s battles: {0[MonthBattles]}\n\n'
@@ -81,13 +81,22 @@ def clan_info(contents):
             'Top 15 player battles: {0[Top15Battles]}\n\n'
         ),
         'players': (
-            'Name: {0[Name]}\n\n'
+            '##Name: {0[Name]}\n\n'
             'Total members: {0[Count]}\n\n'
             'Active members: {0[Active]}\n\n'
             '{1}\n\n'
         ),
-        'tiers': '',
-        'top': ''
+        'tiers': (
+            '##Name: {0[Name]}\n\n'
+            'Total average tier: {0[TotalAvgTier]}\n\n'
+            'Active average tier: {0[ActiveAvgTier]}\n\n'
+            'Top 15 average tier: {0[Top15AvgTier]}\n\n'
+            '{1}\n\n'
+        ),
+        'top': (
+            '##Name: {0[Name]}\n\n'
+            '{1}\n\n'
+        )
     }
     if contents[2].lower() in CLAN_VALID.keys():
         r = requests.get('https://wotclans.com.br/api/clan/' + contents[3])
@@ -97,11 +106,12 @@ def clan_info(contents):
                 players = []
                 if contents[2].lower() == 'active':
                     players = [
-                        '{0[Name]} | {0[MonthBattles]}'.format(p) for p in list(
+                        '{0[Name]} | {0[MonthBattles]}'.format(
+                            p) for p in list(
                             filter(
                                 lambda p: p['MonthBattles'],
                                 data['Players']))]
-                    players.insert(0, 'Player | Months\'s Battles')
+                    players.insert(0, 'Player | Months\'s battles')
                     players.insert(1, ':-:|:-:')
                 elif contents[2].lower() == 'players':
                     players = [
@@ -110,17 +120,51 @@ def clan_info(contents):
                     players.insert(
                         0, 'Player | Total WN8 | Month\'s WN8')
                     players.insert(1, ':-:|:-:|:-:')
+                elif contents[2].lower() == 'tiers':
+                    players = [
+                        '{0[Name]} | {0[TotalTier]} | {0[MonthTier]}'.format(
+                            p) for p in data['Players']]
+                    players.insert(
+                        0,
+                        (
+                            'Player | Lifetime tier average | '
+                            'Month\'s tier average'
+                        ))
+                    players.insert(1, ':-:|:-:|:-:')
+                elif contents[2].lower() == 'top':
+                    top_all = sorted(
+                        data['Players'],
+                        key=lambda p: p['TotalWn8'],
+                        reverse=True)[0:7]
+                    top_rec = sorted(
+                        data['Players'],
+                        key=lambda p: p['MonthWn8'],
+                        reverse=True)[0:7]
+                    players = [
+                        '{0[Name]} | {0[MonthWn8]}'.format(p) for p in top_rec]
+                    players.insert(0, '###Top 7 active players\n')
+                    players.insert(1, 'Player | Month\'s WN8')
+                    players.insert(2, ':-:|:-:')
+                    players += ['\n', '###Top 7 players overall\n',
+                                'Player | Lifetime WN8', ':-:|:-:']
+                    players += ['{0[Name]} | {0[TotalWn8]}'.format(p)
+                                for p in top_all]
                 return (
                     CLAN_VALID[contents[2]].format(data, '\n'.join(players)) +
-                    'https://wotclans.com.br/Clan/{}'.format(contents[3])
+                    'Source: https://wotclans.com.br/Clan/{}'.format(contents[
+                                                                     3])
                 )
             except JSONDecodeError:
-                return """It appears that you have entered either an invalid
-clan tag or one that is not yet being tracked by the website. Please manually
-check this at https://wotclans.com.br/Clan/{}""".format(contents[3])
+                return """Data returned by the website is not in a valid JSON
+format. You may manually check this at https://wotclans.com.br/Clan/{}, but I'm
+afraid that I cannot properly respond to your request at this time. Sorry!
+
+¯\\\\\\_(ツ)\\_/¯""".format(contents[3])
         else:
             return """There appears to be an error at
-https://wotclans.com.br/api/clan/{}. Sorry! ¯\\\\\\_(ツ)\\_/¯.""".format(
+https://wotclans.com.br/api/clan/{}. If your clan is not yet added to the site
+database, please follow instructions at https://wotclans.com.br/About#addClan
+to have it added. Sorry!""".format(
                 contents[3])
 
 
@@ -128,11 +172,20 @@ def community_info(contents):
     pass
 
 
+def thank_you(contents):
+    return """Thank you! I may not be handsome, but I hope you at least find me
+handy!
+
+Credit for my development goes to /u/KamikazeRusher. Credit for data goes to
+the author of the cited source(s)."""
+
+
 VALID = {
     'help': bot_help,
     'player': player_info,
     'clan': clan_info,
-    'community': community_info
+    'community': community_info,
+    'good': thank_you
 }
 
 
@@ -151,7 +204,7 @@ def process(message):
     message.reply(parse(message))
 
 
-def run(bot_name, subreddit):
+def run(bot_name, subreddits):
     setup_logging()
     logger = logging.getLogger('Bot')
     reddit = Reddit(bot_name)
@@ -161,7 +214,7 @@ def run(bot_name, subreddit):
                 'Recevied direct message from {0.author}'.format(message))
             # We don't respond to direct messages
             message.mark_read()
-        elif message.subreddit.display_name.lower() == subreddit.lower():
+        elif message.subreddit.display_name.lower() in subreddits:
             process(message)
             message.mark_read()
             logger.debug('Completed message {0.id}'.format(message))
@@ -174,4 +227,6 @@ def run(bot_name, subreddit):
             message.mark_read()
 
 if __name__ == '__main__':
-    run(argv[1], argv[2])
+    with open(argv[2]) as f:
+        allowed = list(map(lambda s: s.strip().lower(), f.readlines()))
+    run(argv[1], allowed)

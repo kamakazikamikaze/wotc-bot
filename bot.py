@@ -54,24 +54,66 @@ def player_info(contents):
 def clan_info(contents):
     CLAN_VALID = {
         'summary': (
-            'Name: {0[Name]}\n\nThis month\'s battles: {0[MonthBattles]}\n\n'
-            'Total members: {0[Count]}\n\nActive members: {0[Active]}\n\n'
-            'Total WN8: {0[TotalWn8]}\n\nTotal Win Rate: {0[TotalWinRate]:.3%}'
-            '\n\n'
+            'Name: {0[Name]}\n\n'
+            'This month\'s battles: {0[MonthBattles]}\n\n'
+            'Total members: {0[Count]}\n\n'
+            'Active members: {0[Active]}\n\n'
+            'Percent of players active: {0[ActivePercent]:.3%}\n\n'
+            'Total WN8: {0[TotalWn8]}\n\n'
+            'Total win rate: {0[TotalWinRate]:.3%}\n\n'
         ),
-        'active': '',
-        'battles': '',
-        'players': '',
+        'active': (
+            'Name: {0[Name]}\n\nActive member count: {0[Active]}\n\n'
+            'Percent of players active: {0[ActivePercent]:.3%}\n\n'
+            'This month\'s battles: {0[MonthBattles]}\n\n'
+            'Win rate: {0[ActiveWinRate]:.3%}\n\n'
+            'WN8: {0[ActiveWn8]}\n\n'
+            'Average tier: {0[ActiveAvgTier]}\n\n'
+            '{1}\n\n'
+        ),
+        'battles': (
+            'Name: {0[Name]}\n\n'
+            'Total battles: {0[TotalBattles]}\n\n'
+            'Total win rate: {0[TotalWinRate]:.3%}\n\n'
+            'This month\'s battles: {0[MonthBattles]}\n\n'
+            'This month\'s win rate: {0[MonthWinRate]}\n\n'
+            'Active player battles: {0[ActiveBattles]}\n\n'
+            'Top 15 player battles: {0[Top15Battles]}\n\n'
+        ),
+        'players': (
+            'Name: {0[Name]}\n\n'
+            'Total members: {0[Count]}\n\n'
+            'Active members: {0[Active]}\n\n'
+            '{1}\n\n'
+        ),
         'tiers': '',
         'top': ''
     }
-    if contents[2] in CLAN_VALID.keys():
+    if contents[2].lower() in CLAN_VALID.keys():
         r = requests.get('https://wotclans.com.br/api/clan/' + contents[3])
         if r.status_code == 200:
             try:
                 data = r.json()
-                return (CLAN_VALID[contents[2]].format(data) +
-                        'https://wotclans.com.br/Clan/{}'.format(contents[3]))
+                players = []
+                if contents[2].lower() == 'active':
+                    players = [
+                        '{0[Name]} | {0[MonthBattles]}'.format(p) for p in list(
+                            filter(
+                                lambda p: p['MonthBattles'],
+                                data['Players']))]
+                    players.insert(0, 'Player | Months\'s Battles')
+                    players.insert(1, ':-:|:-:')
+                elif contents[2].lower() == 'players':
+                    players = [
+                        '{0[Name]} | {0[TotalWn8]} | {0[MonthWn8]}'.format(
+                            p) for p in data['Players']]
+                    players.insert(
+                        0, 'Player | Total WN8 | Month\'s WN8')
+                    players.insert(1, ':-:|:-:|:-:')
+                return (
+                    CLAN_VALID[contents[2]].format(data, '\n'.join(players)) +
+                    'https://wotclans.com.br/Clan/{}'.format(contents[3])
+                )
             except JSONDecodeError:
                 return """It appears that you have entered either an invalid
 clan tag or one that is not yet being tracked by the website. Please manually

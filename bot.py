@@ -57,42 +57,55 @@ def clan_info(contents):
     CLAN_VALID = {
         'summary': (
             '##Name: {0[Name]}\n\n'
-            'This month\'s battles: {0[MonthBattles]}\n\n'
-            'Total members: {0[Count]}\n\n'
-            'Active members: {0[Active]}\n\n'
-            'Percent of players active: {0[ActivePercent]:.3%}\n\n'
-            'Total WN8: {0[TotalWn8]}\n\n'
-            'Total win rate: {0[TotalWinRate]:.3%}\n\n'
+            '|||\n'
+            ':--|:--\n'
+            'This month\'s battles|{0[MonthBattles]}\n'
+            'Total members|{0[Count]}\n'
+            'Active members|{0[Active]}\n'
+            'Percent of players active|{0[ActivePercent]:.3%}\n'
+            'Total WN8|{0[TotalWn8]}\n'
+            'Total win rate|{0[TotalWinRate]:.3%}\n\n'
         ),
         'active': (
-            '##Name: {0[Name]}\n\nActive member count: {0[Active]}\n\n'
-            'Percent of players active: {0[ActivePercent]:.3%}\n\n'
-            'This month\'s battles: {0[MonthBattles]}\n\n'
-            'Win rate: {0[ActiveWinRate]:.3%}\n\n'
-            'WN8: {0[ActiveWn8]}\n\n'
-            'Average tier: {0[ActiveAvgTier]}\n\n'
+            '##Name: {0[Name]}\n\n'
+            '|||\n'
+            ':--|:--\n'
+            'Active member count|{0[Active]}\n'
+            'Percent of players active|{0[ActivePercent]:.3%}\n'
+            'This month\'s battles|{0[MonthBattles]}\n'
+            'Win rate|{0[ActiveWinRate]:.3%}\n'
+            'WN8|{0[ActiveWn8]}\n'
+            'Average tier|{0[ActiveAvgTier]}\n\n'
+            '###Active players\n\n'
             '{1}\n\n'
         ),
         'battles': (
             '##Name: {0[Name]}\n\n'
-            'Total battles: {0[TotalBattles]}\n\n'
-            'Total win rate: {0[TotalWinRate]:.3%}\n\n'
-            'This month\'s battles: {0[MonthBattles]}\n\n'
-            'This month\'s win rate: {0[MonthWinRate]}\n\n'
-            'Active player battles: {0[ActiveBattles]}\n\n'
-            'Top 15 player battles: {0[Top15Battles]}\n\n'
+            '|||\n'
+            ':--|:--\n'
+            'Total battles|{0[TotalBattles]}\n'
+            'Total win rate|{0[TotalWinRate]:.3%}\n'
+            'This month\'s battles|{0[MonthBattles]}\n'
+            'This month\'s win rate|{0[MonthWinRate]}\n'
+            'Active player battles|{0[ActiveBattles]}\n'
+            'Top 15 player battles|{0[Top15Battles]}\n\n'
         ),
         'players': (
             '##Name: {0[Name]}\n\n'
-            'Total members: {0[Count]}\n\n'
-            'Active members: {0[Active]}\n\n'
+            '|||\n'
+            ':--|:--\n'
+            'Total members|{0[Count]}\n'
+            'Active members|{0[Active]}\n\n'
+            '###All clan members\n\n'
             '{1}\n\n'
         ),
         'tiers': (
             '##Name: {0[Name]}\n\n'
-            'Total average tier: {0[TotalAvgTier]}\n\n'
-            'Active average tier: {0[ActiveAvgTier]}\n\n'
-            'Top 15 average tier: {0[Top15AvgTier]}\n\n'
+            '|||\n'
+            ':--|:--\n'
+            'Total average tier|{0[TotalAvgTier]}\n'
+            'Active average tier|{0[ActiveAvgTier]}\n'
+            'Top 15 average tier|{0[Top15AvgTier]}\n\n'
             '{1}\n\n'
         ),
         'top': (
@@ -100,6 +113,8 @@ def clan_info(contents):
             '{1}\n\n'
         )
     }
+    if len(contents) < 4:
+        return 'No clan name entered. Please retry!'
     if contents[2].lower() in CLAN_VALID:
         r = requests.get('https://wotclans.com.br/api/clan/' + contents[3])
         if r.status_code == 200:
@@ -201,12 +216,14 @@ def tank_info(contents):
             '##Name: {0[Name]}\n\n'
             '{0[TypeName]} tier {0[Tier]} tank ({0[NatioName]})\n\n'
             '*Note: These are the Expected Values, which reflect the 65^th '
-            'percentile of players! (Matching this gives a WN8 of 1565)*\n\n'
-            'Damage: {0[Damage]}\n\n'
-            'Win rate: {0[WinRate]}\n\n'
-            'Kill ratio: {0[Frag]}\n\n'
-            'Spot ratio: {0[Spot]}\n\n'
-            'Defense ratio: {0[Def]}\n\n'
+            'percentile of players! (Matching these gives a WN8 of 1565)*\n\n'
+            '|||\n'
+            ':--|:--\n'
+            'Damage|{0[Damage]}\n'
+            'Win rate|{0[WinRate]}\n'
+            'Kill ratio|{0[Frag]}\n'
+            'Spot ratio|{0[Spot]}\n'
+            'Defense ratio|{0[Def]}\n\n'
             'Source: {1}'
         )
     }
@@ -234,7 +251,8 @@ def tank_info(contents):
             return (
                 'Multiple tanks were returned for that name. This means there '
                 'is not an exact match. You can retry with one of the '
-                'following (assuming it contains what you want):\n\n|Tank|\n'
+                'following (assuming it contains what you want):\n\n'
+                '|Tank|\n'
                 '|:-:|\n{}\n\n'
             ).format('\n'.join(
                 map(lambda t: '|' + t['Name'] + '|', tanks))

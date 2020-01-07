@@ -25,12 +25,12 @@ def setup_logging():
 def bot_help(contents):
     return """Hi there! Thank you for choosing to use this bot.
 
-#Valid Platform Names
+# Valid Platform Names
 
 * ps
 * xbox
 
-#Valid Commands
+# Valid Commands
 
 (Note: Replace PLAT with a platform from above)
 
@@ -40,11 +40,13 @@ def bot_help(contents):
 * clan {{summary, active, battles, players, tier, top}} NAME
 * community PLAT {{summary, today}}
 * community PLAT {{active, inactive, new}} DAYS
+* tank {{moe, wn8}} TANK
 
-#Example Usage
+# Example Usage
 
 `/u/{0} clan summary RDDT`
-`/u/{0} player xbox summary DEZERTstorm03""".format(contents[0].split('/')[-1])
+`/u/{0} player xbox summary DEZERTstorm03`""".format(
+        contents[0].split('/')[-1])
 
 
 def player_info(contents):
@@ -98,7 +100,7 @@ def clan_info(contents):
             '{1}\n\n'
         )
     }
-    if contents[2].lower() in CLAN_VALID.keys():
+    if contents[2].lower() in CLAN_VALID:
         r = requests.get('https://wotclans.com.br/api/clan/' + contents[3])
         if r.status_code == 200:
             try:
@@ -151,8 +153,7 @@ def clan_info(contents):
                                 for p in top_all]
                 return (
                     CLAN_VALID[contents[2]].format(data, '\n'.join(players)) +
-                    'Source: https://wotclans.com.br/Clan/{}'.format(contents[
-                                                                     3])
+                    'Source: {}'.format(r.url)
                 )
             except JSONDecodeError:
                 return """Data returned by the website is not in a valid JSON
@@ -166,6 +167,10 @@ https://wotclans.com.br/api/clan/{}. If your clan is not yet added to the site
 database, please follow instructions at https://wotclans.com.br/About#addClan
 to have it added. Sorry!""".format(
                 contents[3])
+    else:
+        return (
+            'Invalid clan command. Please try one of the following: {}'
+        ).format(', '.join(CLAN_VALID.keys()))
 
 
 def community_info(contents):
@@ -180,24 +185,87 @@ Credit for my development goes to /u/KamikazeRusher. Credit for data goes to
 the author of the cited source(s)."""
 
 
+def tank_info(contents):
+    TANK_VALID = {
+        'moe': (
+            '##Name: {0[Name]}\n\n'
+            '{0[TypeName]} tier {0[Tier]} tank ({0[NatioName]})\n\n'
+            'Mark | Average Damage\n'
+            ':-:|:-:\n'
+            '1|{0[Moe1Dmg]}\n'
+            '2|{0[Moe2Dmg]}\n'
+            '3|{0[Moe3Dmg]}\n\n'
+            'Source: {1}'
+        ),
+        'wn8': (
+            '##Name: {0[Name]}\n\n'
+            '{0[TypeName]} tier {0[Tier]} tank ({0[NatioName]})\n\n'
+            '*Note: These are the Expected Values, which reflect the 65^th '
+            'percentile of players! (Matching this gives a WN8 of 1565)*\n\n'
+            'Damage: {0[Damage]}\n\n'
+            'Win rate: {0[WinRate]}\n\n'
+            'Kill ratio: {0[Frag]}\n\n'
+            'Spot ratio: {0[Spot]}\n\n'
+            'Defense ratio: {0[Def]}\n\n'
+            'Source: {1}'
+        )
+    }
+    # BOT tank {moe, wn8} TANK
+    if len(contents) < 4:
+        return 'No tank name entered. Please retry!'
+    if contents[2].lower() in TANK_VALID:
+        r = requests.get(
+            'https://wotclans.com.br/api/tanks/{}'.format(
+                contents[2].lower()),
+            params={'tank': ' '.join(contents[3:])}
+        )
+        if r.status_code != 200:
+            return (
+                'The API does not appear to accept your tank. Perhaps you '
+                'misspelled?'
+            )
+        tanks = r.json()['Tanks']
+        if len(tanks) < 1:
+            return (
+                'The API does not appear to accept your tank. Perhaps you '
+                'misspelled?'
+            )
+        elif len(tanks) > 1:
+            return (
+                'Multiple tanks were returned for that name. This means there '
+                'is not an exact match. You can retry with one of the '
+                'following (assuming it contains what you want):\n\n|Tank|\n'
+                '|:-:|\n{}\n\n'
+            ).format('\n'.join(
+                map(lambda t: '|' + t['Name'] + '|', tanks))
+            )
+        else:
+            return TANK_VALID[contents[2].lower()].format(tanks[0], r.url)
+    else:
+        return (
+            'Invalid tank command. Please try one of the following: {}'
+        ).format(', '.join(TANK_VALID.keys()))
+
+
 VALID = {
     'help': bot_help,
     'player': player_info,
     'clan': clan_info,
     'community': community_info,
-    'good': thank_you
+    'good': thank_you,
+    'tank': tank_info
 }
 
 
 def parse(message):
     contents = message.body.split()
-    if contents[1] not in VALID.keys():
+    if contents[1].lower() not in VALID:
         return """Oops! Your first command is not valid. Please review your
 spelling and try again. If you continue to have this issue, please
 check the wiki over at /r/{} or ask a mod there for help.""".format(
             contents[0].split('/')[-1])
     else:
-        return VALID[contents[1]](contents)
+        return VALID[contents[1].lower()](contents)
 
 
 def process(message):

@@ -6,11 +6,10 @@ Commands
 
 BOT help
 BOT player PLAT summary NAME
+BOT player PLAT recent NAME
 BOT player PLAT efficiency NAME
-BOT player PLAT activity NAME
 BOT player PLAT tanks efficiency NAME
 BOT player PLAT tanks top NAME
-BOT player PLAT tanks recent NAME
 BOT clan summary NAME
 BOT clan active NAME
 BOT clan battles NAME
@@ -22,3 +21,5 @@ BOT community PLAT today
 BOT community PLAT active DAYS
 BOT community PLAT inactive DAYS
 BOT community PLAT new DAYS
+BOT tank moe TANK
+BOT tank wn8 TANK

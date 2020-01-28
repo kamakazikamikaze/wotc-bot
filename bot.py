@@ -43,10 +43,10 @@ def bot_help(contents):
 * help
 * player PLAT {{summary, recent, efficiency}} NAME
 * player PLAT tanks {{efficiency, top}} NAME
-* clan {{summary, active, battles, players, tier, top}} NAME
+* clan PLAT {{summary, active, battles, players, tier, top}} NAME
 * community PLAT {{summary, today}}
 * community PLAT {{active, inactive, new}} DAYS
-* tank {{moe, wn8}} TANK
+* tank PLAT {{moe, wn8}} TANK
 
 # Example Usage
 
@@ -134,7 +134,7 @@ def player_info(contents):
         )
     if contents[3] == 'tanks':
         player = {'Name': ' '.join(contents[offset:])}
-        soup = BeautifulSoup(r.content)
+        soup = BeautifulSoup(r.content, 'html.parser')
         href = soup.find('li', class_='activemenu').a['href']
         try:
             playerid = parse_qs(urlsplit(href).query)['playerid'][0]
@@ -157,7 +157,7 @@ def player_info(contents):
                 'Tagging /u/KamikazeRusher to review this when he gets '
                 'the mention notification.'
             )
-        # vehicles_soup = BeautifulSoup(vehicles.content)
+        # vehicles_soup = BeautifulSoup(vehicles.content, 'html.parser')
         # source = vehicles_soup.find(
         #     'script',
         #     src='https://www.google.com/jsapi'
@@ -228,7 +228,7 @@ def player_info(contents):
             ) + '\n\nSource: {}\n'.format(vehicles.url)
     else:
         player = {'Name': ' '.join(contents[offset:])}
-        soup = BeautifulSoup(r.content)
+        soup = BeautifulSoup(r.content, 'html.parser')
         if contents[3] == 'summary':
             var = soup.find_all('var')
             if len(var) != 6:
@@ -267,7 +267,7 @@ def player_info(contents):
                     'Tagging /u/KamikazeRusher to review this when he gets '
                     'the mention notification.'
                 )
-            recent_soup = BeautifulSoup(recent.content)
+            recent_soup = BeautifulSoup(recent.content, 'html.parser')
             # table = recent_soup.find('div', class_='container col-sm-12')
             stats = {'week': [], 'month': [], 'overall': []}
             week_and_month = recent_soup.find_all(
@@ -323,7 +323,7 @@ def player_info(contents):
                     'Tagging /u/KamikazeRusher to review this when he gets '
                     'the mention notification.'
                 )
-            trend_soup = BeautifulSoup(trend.content)
+            trend_soup = BeautifulSoup(trend.content, 'html.parser')
             # data_parent = trend_soup.find('ul', class_='thumbnails')
             # data = data_parent.find_all('div', class_='row')
             data = trend_soup.find_all('ul', class_='event-list')
@@ -410,16 +410,23 @@ def clan_info(contents):
             '{1}\n\n'
         )
     }
-    if len(contents) < 4:
-        return 'No clan name entered. Please retry!'
     contents[2] = contents[2].lower()
-    if contents[2] in CLAN_VALID:
-        r = get('https://wotclans.com.br/api/clan/' + contents[3])
+    if contents[2] not in ('ps', 'xbox'):
+        return 'Bad platform. Please use "ps" or "xbox"'
+    if contents[2] == 'ps':
+        url = 'https://ps.wotclans.com.br/api/clan/'
+    else:
+        url = 'https://wotclans.com.br/api/clan/'
+    if len(contents) < 5:
+        return 'No clan name entered. Please retry!'
+    contents[3] = contents[3].lower()
+    if contents[3] in CLAN_VALID:
+        r = get(url + contents[4])
         if r.status_code == 200:
             try:
                 data = r.json()
                 players = []
-                if contents[2] == 'active':
+                if contents[3] == 'active':
                     players = [
                         '{0[Name]} | {0[MonthBattles]}'.format(
                             p) for p in list(
@@ -428,14 +435,14 @@ def clan_info(contents):
                                 data['Players']))]
                     players.insert(0, 'Player | Months\'s battles')
                     players.insert(1, ':-:|:-:')
-                elif contents[2] == 'players':
+                elif contents[3] == 'players':
                     players = [
                         '{0[Name]} | {0[TotalWn8]} | {0[MonthWn8]}'.format(
                             p) for p in data['Players']]
                     players.insert(
                         0, 'Player | Total WN8 | Month\'s WN8')
                     players.insert(1, ':-:|:-:|:-:')
-                elif contents[2] == 'tiers':
+                elif contents[3] == 'tiers':
                     players = [
                         '{0[Name]} | {0[TotalTier]} | {0[MonthTier]}'.format(
                             p) for p in data['Players']]
@@ -446,7 +453,7 @@ def clan_info(contents):
                             'Month\'s tier average'
                         ))
                     players.insert(1, ':-:|:-:|:-:')
-                elif contents[2] == 'top':
+                elif contents[3] == 'top':
                     top_all = sorted(
                         data['Players'],
                         key=lambda p: p['TotalWn8'],
@@ -465,7 +472,7 @@ def clan_info(contents):
                     players += ['{0[Name]} | {0[TotalWn8]}'.format(p)
                                 for p in top_all]
                 return (
-                    CLAN_VALID[contents[2]].format(data, '\n'.join(players)) +
+                    CLAN_VALID[contents[3]].format(data, '\n'.join(players)) +
                     'Source: {}'.format(r.url)
                 )
             except JSONDecodeError:
@@ -473,13 +480,13 @@ def clan_info(contents):
 format. You may manually check this at https://wotclans.com.br/Clan/{}, but I'm
 afraid that I cannot properly respond to your request at this time. Sorry!
 
-¯\\\\\\_(ツ)\\_/¯""".format(contents[3])
+¯\\\\\\_(ツ)\\_/¯""".format(contents[4])
         else:
             return """There appears to be an error at
 https://wotclans.com.br/api/clan/{}. If your clan is not yet added to the site
 database, please follow instructions at https://wotclans.com.br/About#addClan
 to have it added. Sorry!""".format(
-                contents[3])
+                contents[4])
     else:
         return (
             'Invalid clan command. Please try one of the following: {}'
@@ -526,14 +533,20 @@ def tank_info(contents):
             'Source: {1}'
         )
     }
-    # BOT tank {moe, wn8} TANK
-    if len(contents) < 4:
+    # BOT tank PLAT {moe, wn8} TANK
+    contents[2] = contents[2].lower()
+    if contents[2] not in ('ps', 'xbox'):
+        return 'Bad platform. Please use "ps" or "xbox"'
+    if contents[2] == 'ps':
+        url = 'https://ps.wotclans.com.br/api/tanks/{}'
+    else:
+        url = 'https://wotclans.com.br/api/tanks/{}'
+    if len(contents) < 5:
         return 'No tank name entered. Please retry!'
-    if contents[2].lower() in TANK_VALID:
+    if contents[3].lower() in TANK_VALID:
         r = get(
-            'https://wotclans.com.br/api/tanks/{}'.format(
-                contents[2].lower()),
-            params={'tank': ' '.join(contents[3:])}
+            url.format(contents[3].lower()),
+            params={'tank': ' '.join(contents[4:])}
         )
         if r.status_code != 200:
             return (
@@ -557,7 +570,7 @@ def tank_info(contents):
                 map(lambda t: '|' + t['Name'] + '|', tanks))
             )
         else:
-            return TANK_VALID[contents[2].lower()].format(tanks[0], r.url)
+            return TANK_VALID[contents[3].lower()].format(tanks[0], r.url)
     else:
         return (
             'Invalid tank command. Please try one of the following: {}'

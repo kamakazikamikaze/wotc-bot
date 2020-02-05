@@ -131,3 +131,4 @@ dmypy.json
 # Begin edits for project
 dev/
 praw.ini
+config.ini

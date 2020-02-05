@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
+from argparse import ArgumentParser
 from bs4 import BeautifulSoup
+from configparser import ConfigParser
 from itertools import zip_longest
 from json import loads
 from json.decoder import JSONDecodeError
@@ -9,8 +11,10 @@ from operator import itemgetter
 from praw import Reddit
 from re import findall
 from requests import get
-from sys import argv
+# from sys import argv
 from urllib.parse import urlsplit, parse_qs
+
+_WG_API_KEY_ = 'demo'
 
 
 def setup_logging():
@@ -47,6 +51,7 @@ def bot_help(contents):
 * community PLAT {{summary, today}}
 * community PLAT {{active, inactive, new}} DAYS
 * tank PLAT {{moe, wn8}} TANK
+* vehicle cost TANK
 
 # Example Usage
 
@@ -69,7 +74,6 @@ def grouper(n, iterable, fillvalue=None):
 
 
 def player_info(contents):
-    # TODO: Finish all valid commands
     PLAYER_VALID = {
         'summary': (
             '##Name: {0[Name]}\n\n'
@@ -107,10 +111,8 @@ def player_info(contents):
             ':--|:--|:--|:--|:--|:--|:--|:--|:--|:--|:--\n'
         )
     }
-    if contents[2].lower() not in ('ps4', 'xbox'):
+    if contents[2] not in ('ps4', 'xbox'):
         return 'Bad platform. Please use "ps4" or "xbox" and try again!'
-    contents[3] = contents[3].lower()
-    contents[4] = contents[4].lower()
     if contents[3] == 'tanks' and len(contents) < 5:
         return 'Something is wrong with your request. Please retry!'
     elif contents[3] == 'tanks' and contents[4] not in PLAYER_TANK_VALID:
@@ -410,7 +412,6 @@ def clan_info(contents):
             '{1}\n\n'
         )
     }
-    contents[2] = contents[2].lower()
     if contents[2] not in ('ps', 'xbox'):
         return 'Bad platform. Please use "ps" or "xbox"'
     if contents[2] == 'ps':
@@ -419,7 +420,6 @@ def clan_info(contents):
         url = 'https://wotclans.com.br/api/clan/'
     if len(contents) < 5:
         return 'No clan name entered. Please retry!'
-    contents[3] = contents[3].lower()
     if contents[3] in CLAN_VALID:
         r = get(url + contents[4])
         if r.status_code == 200:
@@ -534,7 +534,6 @@ def tank_info(contents):
         )
     }
     # BOT tank PLAT {moe, wn8} TANK
-    contents[2] = contents[2].lower()
     if contents[2] not in ('ps', 'xbox'):
         return 'Bad platform. Please use "ps" or "xbox"'
     if contents[2] == 'ps':
@@ -543,9 +542,9 @@ def tank_info(contents):
         url = 'https://wotclans.com.br/api/tanks/{}'
     if len(contents) < 5:
         return 'No tank name entered. Please retry!'
-    if contents[3].lower() in TANK_VALID:
+    if contents[3] in TANK_VALID:
         r = get(
-            url.format(contents[3].lower()),
+            url.format(contents[3]),
             params={'tank': ' '.join(contents[4:])}
         )
         if r.status_code != 200:
@@ -570,39 +569,46 @@ def tank_info(contents):
                 map(lambda t: '|' + t['Name'] + '|', tanks))
             )
         else:
-            return TANK_VALID[contents[3].lower()].format(tanks[0], r.url)
+            return TANK_VALID[contents[3]].format(tanks[0], r.url)
     else:
         return (
             'Invalid tank command. Please try one of the following: {}'
         ).format(', '.join(TANK_VALID.keys()))
 
 
-VALID = {
-    'help': bot_help,
-    'player': player_info,
-    'clan': clan_info,
-    'community': community_info,
-    'good': thank_you,
-    'tank': tank_info
-}
-
-
 def parse(message):
-    contents = message.body.split()
+    VALID = {
+        'help': bot_help,
+        'player': player_info,
+        'clan': clan_info,
+        'community': community_info,
+        'tank': tank_info
+    }
+    RESPONSES = {
+        'good': thank_you,
+    }
+    contents = message.body.lower().split()
     if len(contents) == 1:
         return VALID['help'](contents)
-    if contents[1].lower() not in VALID:
+    if '/' not in contents[0]:
+        if contents[0] in RESPONSES:
+            return RESPONSES[contents[0]](contents)
+        else:
+            return None
+    elif contents[1] not in VALID:
         return """Oops! Your first command is not valid. Please review your
 spelling and try again. If you continue to have this issue, please
 check the wiki over at /r/{} or ask a mod there for help.""".format(
             contents[0].split('/')[-1])
     else:
-        return VALID[contents[1].lower()](contents)
+        return VALID[contents[1]](contents)
 
 
 def process(message, reddit):
     response = parse(message)
-    if len(response) <= 10000:
+    if response is None:
+        pass
+    elif len(response) <= 10000:
         message.reply(response)
     else:
         sub = reddit.subreddit(reddit.config.username)
@@ -640,6 +646,31 @@ def run(bot_name, subreddits):
             message.mark_read()
 
 if __name__ == '__main__':
-    with open(argv[2]) as f:
-        allowed = list(map(lambda s: s.strip().lower(), f.readlines()))
-    run(argv[1], allowed)
+    # with open(argv[2]) as f:
+    #     allowed = list(map(lambda s: s.strip().lower(), f.readlines()))
+    # run(argv[1], allowed)
+    argparse = ArgumentParser(description='World of Tanks Console Reddit Bot')
+    argparse.add_argument('filename', help='Name of configuration file')
+    argparse.add_argument(
+        '-g',
+        '--generate',
+        action='store_true',
+        help='Generate a configuration file with default values')
+    args = argparse.parse_args()
+    config = ConfigParser()
+    if args.generate:
+        config['DEFAULT'] = {
+            'Bot Name': 'wotc_bot',
+            'Subreddits': 'worldoftanksconsole,wotc_bot',
+            'WG API': 'demo'
+        }
+        with open(args.filename, 'w') as f:
+            config.write(f)
+    else:
+        config.read(args.filename)
+        try:
+            _WG_API_KEY_ = config['DEFAULT']['WG API']
+            run(config['DEFAULT']['Bot Name'],
+                config['DEFAULT']['Subreddits'].split(','))
+        except KeyError as e:
+            print('You are missing this key value:', e.args[0])

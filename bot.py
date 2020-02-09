@@ -13,6 +13,7 @@ from re import findall
 from requests import get
 # from sys import argv
 from urllib.parse import urlsplit, parse_qs
+# from wotconsole.session import WOTXSession
 
 _WG_API_KEY_ = 'demo'
 
@@ -51,7 +52,6 @@ def bot_help(contents):
 * community PLAT {{summary, today}}
 * community PLAT {{active, inactive, new}} DAYS
 * tank PLAT {{moe, wn8}} TANK
-* vehicle cost TANK
 
 # Example Usage
 
@@ -576,13 +576,20 @@ def tank_info(contents):
         ).format(', '.join(TANK_VALID.keys()))
 
 
+# def tank_cost(contents):
+#     session = WOTXSession(_WG_API_KEY_)
+#     vehicle_info = session.vehicle_info(
+#         fields=['name', 'price_credit', 'price_gold'])
+
+
 def parse(message):
     VALID = {
         'help': bot_help,
         'player': player_info,
         'clan': clan_info,
         'community': community_info,
-        'tank': tank_info
+        'tank': tank_info,
+        # 'cost': tank_cost
     }
     RESPONSES = {
         'good': thank_you,

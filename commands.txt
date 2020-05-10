@@ -16,10 +16,5 @@ BOT clan PLAT battles NAME
 BOT clan PLAT players NAME
 BOT clan PLAT tier NAME
 BOT clan PLAT top NAME
-BOT community PLAT summary
-BOT community PLAT today
-BOT community PLAT active DAYS
-BOT community PLAT inactive DAYS
-BOT community PLAT new DAYS
 BOT tank PLAT moe TANK
 BOT tank PLAT wn8 TANK

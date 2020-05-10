@@ -49,8 +49,6 @@ def bot_help(contents):
 * player PLAT {{summary, recent, efficiency}} NAME
 * player PLAT tanks {{efficiency, top}} NAME
 * clan PLAT {{summary, active, battles, players, tier, top}} NAME
-* community PLAT {{summary, today}}
-* community PLAT {{active, inactive, new}} DAYS
 * tank PLAT {{moe, wn8}} TANK
 
 # Example Usage
@@ -493,10 +491,6 @@ to have it added. Sorry!""".format(
         ).format(', '.join(CLAN_VALID.keys()))
 
 
-def community_info(contents):
-    pass
-
-
 def thank_you(contents):
     return """Thank you! I may not be handsome, but I hope you at least find me
 handy!
@@ -587,7 +581,6 @@ def parse(message):
         'help': bot_help,
         'player': player_info,
         'clan': clan_info,
-        'community': community_info,
         'tank': tank_info,
         # 'cost': tank_cost
     }

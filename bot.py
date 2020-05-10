@@ -55,7 +55,7 @@ def bot_help(contents):
 
 `/u/{0} clan summary RDDT`
 
-`/u/{0} player xbox summary DEZERTstorm03
+`/u/{0} player xbox summary DEZERTstorm03`
 
 # Looking for community activity?
 

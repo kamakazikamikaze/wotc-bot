@@ -55,8 +55,14 @@ def bot_help(contents):
 
 `/u/{0} clan summary RDDT`
 
-`/u/{0} player xbox summary DEZERTstorm03`""".format(
-        contents[0].split('/')[-1])
+`/u/{0} player xbox summary DEZERTstorm03
+
+# Looking for community activity?
+
+To reduce server load, a summary of community statistics is posted on Twitter
+under the  [WOTC_Tracker account](https://twitter.com/WOTC_Tracker).
+Information is shared daily. Please like, share, and retweet as much (or as
+little) as you want!""".format(contents[0].split('/')[-1])
 
 
 def grouper(n, iterable, fillvalue=None):
